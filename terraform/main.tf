@@ -4,6 +4,12 @@ variable "openai_api_key" {
   sensitive   = true 
 }
 
+variable "slack_webhook_url" {
+  description = "Slack Webhook URL for interactive SOAR alerts"
+  type        = string
+  sensitive   = true
+}
+
 # 1. Automatically zip the playbook function files
 data "archive_file" "soar_zip" {
   type        = "zip"
@@ -46,6 +52,7 @@ resource "aws_lambda_function" "soar_brain_lambda" {
   environment {
     variables = {
       OPENAI_API_KEY = var.openai_api_key
+      SLACK_WEBHOOK_URL = var.slack_webhook_url
     }
   }
 }
@@ -145,4 +152,39 @@ resource "aws_iam_role_policy" "soar_iam_quarantine_access" {
       }
     ]
   })
+}
+
+# --- SLACK INTERACTIVITY RECEIVER ---
+
+# 1. Build the new Lambda Function
+resource "aws_lambda_function" "slack_receiver_lambda" {
+  filename      = data.archive_file.soar_zip.output_path
+  function_name = "slack_action_receiver"
+  
+  # Notice we are reusing the EXACT SAME IAM role, so it already has DB/IAM permissions!
+  role          = aws_iam_role.soar_lambda_role.arn 
+  
+  handler       = "slack_action_receiver.lambda_handler"
+  runtime       = "python3.10"
+  timeout       = 10
+}
+
+# 2. Give the Lambda a dedicated public HTTPS URL for Slack
+resource "aws_lambda_function_url" "slack_receiver_url" {
+  function_name      = aws_lambda_function.slack_receiver_lambda.function_name
+  authorization_type = "NONE"
+}
+
+# 3. Print the URL to our terminal when deployment finishes
+output "slack_interactivity_url" {
+  value = aws_lambda_function_url.slack_receiver_url.function_url
+}
+
+# Explicitly allow the public internet (Slack) to invoke the Function URL
+resource "aws_lambda_permission" "slack_url_public_access" {
+  statement_id           = "AllowPublicFunctionUrl"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = aws_lambda_function.slack_receiver_lambda.function_name
+  principal              = "*"
+  function_url_auth_type = "NONE"
 }
