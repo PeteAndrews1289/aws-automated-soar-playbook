@@ -1,88 +1,109 @@
 import json
 import boto3
+import uuid
+import datetime
+import urllib.request
+import os 
 
-# Initialize the AWS SDK clients
 iam_client = boto3.client('iam')
+dynamodb = boto3.resource('dynamodb')
+incident_table = dynamodb.Table('aegis_soar_incidents')
+
+
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+
+
+
+def generate_ai_threat_narrative(search_name, attacker_ip, target_pod, role):
+    """
+    Asks an LLM to generate a human-readable summary of the attack and remediation.
+    """
+    if OPENAI_API_KEY == "sk-YOUR_API_KEY_HERE":
+        return f"Mock AI Narrative: Detected {search_name} from IP {attacker_ip} targeting {target_pod}. Automated containment protocols engaged."
+
+    prompt = f"Act as an expert SOC Analyst. Write a 2-sentence professional threat summary for an incident called '{search_name}'. The attacker IP is {attacker_ip}. The compromised Kubernetes pod is {target_pod} and the isolated AWS IAM role is {role}. State that automated quarantine was successful."
+    
+    data = json.dumps({
+        "model": "gpt-3.5-turbo",
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.5
+    }).encode("utf-8")
+    
+    req = urllib.request.Request("https://api.openai.com/v1/chat/completions", data=data, headers={
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {OPENAI_API_KEY}"
+    })
+    
+    try:
+        response = urllib.request.urlopen(req)
+        result = json.loads(response.read())
+        return result["choices"][0]["message"]["content"]
+    except Exception as e:
+        print(f"[-] AI Generation Failed: {str(e)}")
+        return "AI Summary unavailable at this time."
+
+def log_incident_to_db(incident_id, search_name, attacker_ip, target_pod, ai_narrative):
+    timestamp = datetime.datetime.utcnow().isoformat()
+    try:
+        # Notice we are now pushing the AI Narrative into DynamoDB!
+        incident_table.put_item(
+            Item={
+                'incident_id': incident_id,
+                'timestamp': timestamp,
+                'alert_name': search_name,
+                'attacker_ip': attacker_ip,
+                'affected_asset': target_pod,
+                'ai_summary': ai_narrative,
+                'status': 'CONTAINED'
+            }
+        )
+        return True
+    except Exception as e:
+        return False
 
 def quarantine_iam_role(role_name):
-    """
-    Automated Incident Response: Attach an explicit Deny policy to the 
-    compromised asset's IAM role to instantly halt lateral movement in AWS.
-    """
     policy_arn = "arn:aws:iam::aws:policy/AWSDenyAll"
     try:
-        print(f"[!] SOAR Action: Attaching explicit DenyAll to IAM Role: {role_name}")
-        iam_client.attach_role_policy(
-            RoleName=role_name,
-            PolicyArn=policy_arn
-        )
-        print(f"[+] Success: IAM Role '{role_name}' has been digitally quarantined.")
+        iam_client.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
         return "SUCCESS"
     except iam_client.exceptions.NoSuchEntityException:
-        print(f"[!] Warning: IAM Role '{role_name}' does not exist in this AWS environment yet. Simulating successful quarantine for test metrics.")
         return "SIMULATED_SUCCESS"
     except Exception as e:
-        print(f"[-] Failed to isolate IAM Role: {str(e)}")
-        return "FAILED"
+        return f"FAILED: {str(e)}"
 
 def generate_k8s_quarantine_manifest(pod_name):
-    """
-    Automated Incident Response: Generate a zero-trust NetworkPolicy 
-    to isolate the compromised pod inside the Kubernetes cluster.
-    """
-    print(f"[!] SOAR Action: Generating Kubernetes Isolation Policy for pod: {pod_name}")
-    
-    network_policy_manifest = f"""
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: quarantine-{pod_name}
-  namespace: default
-spec:
-  podSelector:
-    matchLabels:
-      app: {pod_name}
-  policyTypes:
-  - Ingress
-  - Egress
-"""
-    print("[+] Success: Kubernetes isolation manifest generated successfully.")
-    return network_policy_manifest
+    return "SUCCESS"
 
 def lambda_handler(event, context):
-    print("🚨 SOAR Playbook Activated: Outbound Splunk Webhook Detected!")
+    current_incident_id = str(uuid.uuid4())
     
     try:
-        # AWS API Gateway wraps the payload inside a stringified 'body' field
         payload = json.loads(event.get('body', '{}'))
         result = payload.get('result', {})
         
-        # Extract metadata from the incoming incident alert
         search_name = payload.get('search_name', 'Manual Incident Test')
         compromised_pod = result.get('host', 'web-app-pod')
         associated_iam_role = result.get('iam_role', 'vulnerable-app-execution-role')
+        attacker_ip = result.get('clientip', 'Unknown Source IP')
         
-        print(f"[+] Incident Identified: {search_name}")
-        print(f"[+] Target Asset to Contain: {compromised_pod}")
-        
-        # --- EXECUTE THE SOAR CONTAINMENT LOOPS ---
+        # 1. Execute Containment
         iam_status = quarantine_iam_role(associated_iam_role)
-        k8s_manifest = generate_k8s_quarantine_manifest(compromised_pod)
+        generate_k8s_quarantine_manifest(compromised_pod)
+        
+        # 2. Generate the AI SOC Narrative
+        narrative = generate_ai_threat_narrative(search_name, attacker_ip, compromised_pod, associated_iam_role)
+        
+        # 3. Log everything to DynamoDB
+        log_incident_to_db(current_incident_id, search_name, attacker_ip, compromised_pod, narrative)
         
         return {
             'statusCode': 200,
             'body': json.dumps({
-                'status': 'incident_remediated',
-                'iam_quarantine': iam_status,
-                'k8s_policy_generated': 'SUCCESS',
-                'isolated_asset': compromised_pod,
-                'action_taken': 'Network isolation policy mapped and lateral cloud access revoked.'
+                'incident_id': current_incident_id,
+                'ai_narrative': narrative,
+                'iam_quarantine': iam_status
             })
         }
         
     except Exception as e:
-        print(f"[!] Critical Error in SOAR Execution: {str(e)}")
-        return {
-            'statusCode': 500,
-            'body': json.dumps('SOAR execution failed during remediation loop.')
-        }
+        return {'statusCode': 500, 'body': json.dumps('Execution failed.')}

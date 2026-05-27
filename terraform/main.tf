@@ -1,3 +1,9 @@
+variable "openai_api_key" {
+  description = "OpenAI API Key for SOC Narrative Generation"
+  type        = string
+  sensitive   = true 
+}
+
 # 1. Automatically zip the playbook function files
 data "archive_file" "soar_zip" {
   type        = "zip"
@@ -34,7 +40,14 @@ resource "aws_lambda_function" "soar_brain_lambda" {
   role             = aws_iam_role.soar_lambda_role.arn
   handler          = "soar_playbook.lambda_handler"
   runtime          = "python3.10"
+  timeout          = 15
   source_code_hash = data.archive_file.soar_zip.output_base64sha256
+
+  environment {
+    variables = {
+      OPENAI_API_KEY = var.openai_api_key
+    }
+  }
 }
 
 # 4. Provision the Public API Gateway
@@ -76,4 +89,60 @@ resource "aws_lambda_permission" "allow_api_gateway" {
 # Output the endpoint URL to use in our Splunk Webhook alert settings
 output "soar_endpoint_url" {
   value = "${aws_apigatewayv2_api.soar_gateway.api_endpoint}/incident"
+}
+
+# --- PHASE 1: DYNAMODB PERSISTENCE LAYER ---
+
+resource "aws_dynamodb_table" "incident_database" {
+  name           = "aegis_soar_incidents"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key       = "incident_id"
+
+  attribute {
+    name = "incident_id"
+    type = "S" # "S" stands for String
+  }
+}
+
+# Define the policy allowing Lambda to write to the DynamoDB table
+resource "aws_iam_policy" "dynamodb_write_policy" {
+  name        = "soar_dynamodb_write_access"
+  description = "Allows SOAR playbook to log incidents into DynamoDB."
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = [
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem"
+        ]
+        Resource = aws_dynamodb_table.incident_database.arn
+      }
+    ]
+  })
+}
+
+# Attach this specific policy to the existing Lambda execution role
+resource "aws_iam_role_policy_attachment" "soar_attach_dynamodb" {
+  role       = aws_iam_role.soar_lambda_role.name
+  policy_arn = aws_iam_policy.dynamodb_write_policy.arn
+}
+
+# Grant the SOAR Lambda permission to attach quarantine policies to compromised roles
+resource "aws_iam_role_policy" "soar_iam_quarantine_access" {
+  name = "soar_iam_quarantine_policy"
+  role = "soar_incident_response_execution_role"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "iam:AttachRolePolicy"
+        Resource = "*"
+      }
+    ]
+  })
 }
