@@ -101,22 +101,19 @@ The project produced a working human-in-the-loop response flow. Screenshots show
 
 The main finding is that response automation is most useful when it preserves analyst control for high-impact actions. The workflow can speed up triage and execution while still requiring a human decision before IAM permissions are changed.
 
-## Screenshots
+## Evidence / Artifacts
 
-Existing screenshots in this repository:
+Existing evidence in this repository:
 
 - `docs/screenshots/human-in-the-loop-success.png`
 - `docs/screenshots/interactive-slack-ui.png`
 - `docs/screenshots/automated-pod-quarantine.png`
 - `docs/screenshots/terraform-apply-success.png`
-
-Suggested additional screenshots:
-
-- `docs/screenshots/dynamodb-incident-record.png`
-- `docs/screenshots/splunk-webhook-alert-config.png`
-- `docs/screenshots/iam-deny-policy-attached.png`
-- `docs/screenshots/lambda-cloudwatch-logs.png`
-- `docs/screenshots/architecture.png`
+- `docs/incident-workflow.md`
+- `lambda_soar/soar_playbook.py`
+- `lambda_soar/slack_action_receiver.py`
+- `terraform/main.tf`
+- `k8s_quarantine/quarantine_policy.yaml`
 
 ## Challenges & Lessons Learned
 
