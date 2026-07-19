@@ -179,7 +179,7 @@ resource "aws_lambda_function" "brain" {
   function_name    = "${var.name_prefix}-brain"
   role             = aws_iam_role.brain.arn
   handler          = "soar_playbook.lambda_handler"
-  runtime          = "python3.10"
+  runtime          = "python3.13"
   timeout          = 15
   memory_size      = 256
   source_code_hash = data.archive_file.lambda_bundle.output_base64sha256
@@ -203,7 +203,7 @@ resource "aws_lambda_function" "receiver" {
   function_name    = "${var.name_prefix}-slack-receiver"
   role             = aws_iam_role.receiver.arn
   handler          = "slack_action_receiver.lambda_handler"
-  runtime          = "python3.10"
+  runtime          = "python3.13"
   timeout          = 10
   memory_size      = 256
   source_code_hash = data.archive_file.lambda_bundle.output_base64sha256
