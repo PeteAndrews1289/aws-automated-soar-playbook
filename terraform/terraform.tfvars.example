@@ -1,0 +1,8 @@
+allowed_target_role_names     = ["aegis-response-target"]
+alert_webhook_secret_arn      = "arn:aws:secretsmanager:us-east-2:111122223333:secret:aegis-alert-hmac"
+slack_webhook_url_secret_arn  = "arn:aws:secretsmanager:us-east-2:111122223333:secret:aegis-slack-webhook"
+slack_signing_secret_arn      = "arn:aws:secretsmanager:us-east-2:111122223333:secret:aegis-slack-signing"
+
+# Optional: configure both values to enable model-assisted narrative generation.
+# openai_api_key_secret_arn = "arn:aws:secretsmanager:us-east-2:111122223333:secret:aegis-openai-key"
+# openai_model                = "your-evaluated-model-id"

@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">AegisSOAR sanitized architecture and bounded lab evidence</title>
+  <desc id="desc">CloudTrail flows through S3, SNS and SQS to Splunk, then through authenticated alert intake, DynamoDB, Slack approval, and verified IAM containment. Cards disclose 647 observed upstream events, a 600 second polling interval, six starter searches, and an AccessDenied historical containment result.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#071426"/>
+      <stop offset="1" stop-color="#17324a"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="11" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" rx="28" fill="url(#background)"/>
+  <circle cx="1100" cy="30" r="190" fill="#38d0b5" opacity="0.07"/>
+  <circle cx="40" cy="630" r="220" fill="#4dafff" opacity="0.08"/>
+
+  <g font-family="system-ui, -apple-system, sans-serif">
+    <text x="64" y="68" fill="#f4f8fb" font-size="32" font-weight="700">AegisSOAR • authenticated, human-approved response</text>
+    <text x="64" y="101" fill="#a9bed0" font-size="17">Sanitized evidence from completed, dismantled AWS and Splunk labs</text>
+
+    <g transform="translate(64 142)" filter="url(#shadow)">
+      <g>
+        <rect width="136" height="70" rx="14" fill="#183f5c" stroke="#4dafff"/>
+        <text x="68" y="42" text-anchor="middle" fill="#e8f5ff" font-size="18" font-weight="650">CloudTrail</text>
+      </g>
+      <g transform="translate(166 0)">
+        <rect width="116" height="70" rx="14" fill="#183f5c" stroke="#4dafff"/>
+        <text x="58" y="42" text-anchor="middle" fill="#e8f5ff" font-size="18" font-weight="650">S3</text>
+      </g>
+      <g transform="translate(312 0)">
+        <rect width="128" height="70" rx="14" fill="#183f5c" stroke="#4dafff"/>
+        <text x="64" y="42" text-anchor="middle" fill="#e8f5ff" font-size="18" font-weight="650">SNS / SQS</text>
+      </g>
+      <g transform="translate(470 0)">
+        <rect width="126" height="70" rx="14" fill="#174c49" stroke="#38d0b5"/>
+        <text x="63" y="42" text-anchor="middle" fill="#e7fffb" font-size="18" font-weight="650">Splunk</text>
+      </g>
+      <g transform="translate(626 0)">
+        <rect width="144" height="70" rx="14" fill="#3d315d" stroke="#a996ff"/>
+        <text x="72" y="31" text-anchor="middle" fill="#f2eeff" font-size="17" font-weight="650">Signed alert</text>
+        <text x="72" y="52" text-anchor="middle" fill="#c9bff2" font-size="12">HMAC + event ID</text>
+      </g>
+      <g transform="translate(800 0)">
+        <rect width="144" height="70" rx="14" fill="#3d315d" stroke="#a996ff"/>
+        <text x="72" y="31" text-anchor="middle" fill="#f2eeff" font-size="17" font-weight="650">Slack review</text>
+        <text x="72" y="52" text-anchor="middle" fill="#c9bff2" font-size="12">verified callback</text>
+      </g>
+      <g transform="translate(974 0)">
+        <rect width="98" height="70" rx="14" fill="#174c49" stroke="#38d0b5"/>
+        <text x="49" y="31" text-anchor="middle" fill="#e7fffb" font-size="17" font-weight="650">IAM</text>
+        <text x="49" y="52" text-anchor="middle" fill="#a9d9d0" font-size="12">verify / fail</text>
+      </g>
+    </g>
+
+    <g stroke="#75bdea" stroke-width="3" fill="none" opacity="0.9">
+      <path d="M200 177h30"/><path d="m223 170 8 7-8 7"/>
+      <path d="M346 177h30"/><path d="m369 170 8 7-8 7"/>
+      <path d="M504 177h30"/><path d="m527 170 8 7-8 7"/>
+      <path d="M660 177h30"/><path d="m683 170 8 7-8 7"/>
+      <path d="M834 177h30"/><path d="m857 170 8 7-8 7"/>
+      <path d="M1008 177h30"/><path d="m1031 170 8 7-8 7"/>
+    </g>
+
+    <g transform="translate(64 260)" filter="url(#shadow)">
+      <rect width="250" height="155" rx="18" fill="#f7fbff"/>
+      <text x="24" y="55" fill="#0c2c42" font-size="42" font-weight="750">647</text>
+      <text x="24" y="88" fill="#31556c" font-size="17" font-weight="650">events observed upstream</text>
+      <text x="24" y="117" fill="#647e8f" font-size="14">one bounded Splunk search</text>
+    </g>
+    <g transform="translate(338 260)" filter="url(#shadow)">
+      <rect width="250" height="155" rx="18" fill="#f7fbff"/>
+      <text x="24" y="55" fill="#0c2c42" font-size="42" font-weight="750">600s</text>
+      <text x="24" y="88" fill="#31556c" font-size="17" font-weight="650">configured poll interval</text>
+      <text x="24" y="117" fill="#647e8f" font-size="14">not measured response latency</text>
+    </g>
+    <g transform="translate(612 260)" filter="url(#shadow)">
+      <rect width="250" height="155" rx="18" fill="#f7fbff"/>
+      <text x="24" y="55" fill="#0c2c42" font-size="42" font-weight="750">6</text>
+      <text x="24" y="88" fill="#31556c" font-size="17" font-weight="650">starter SPL searches</text>
+      <text x="24" y="117" fill="#647e8f" font-size="14">not regression-tested</text>
+    </g>
+    <g transform="translate(886 260)" filter="url(#shadow)">
+      <rect width="250" height="155" rx="18" fill="#fff1ef" stroke="#f28b82"/>
+      <text x="24" y="51" fill="#7a2019" font-size="25" font-weight="750">AccessDenied</text>
+      <text x="24" y="86" fill="#8d4039" font-size="17" font-weight="650">historical IAM result</text>
+      <text x="24" y="115" fill="#9d625d" font-size="14">no success claim retained</text>
+    </g>
+
+    <g transform="translate(64 460)">
+      <rect width="1072" height="108" rx="18" fill="#0a1b2d" stroke="#2b5774"/>
+      <text x="28" y="34" fill="#dceaf4" font-size="17" font-weight="650">Truth-preserving state transition</text>
+      <text x="28" y="65" fill="#9eb6c8" font-size="15">PENDING_APPROVAL → CONTAINMENT_IN_PROGRESS → policy visible: CONTAINED_BY_HUMAN</text>
+      <text x="28" y="91" fill="#f2aaa3" font-size="15">API or verification error → CONTAINMENT_FAILED</text>
+    </g>
+
+    <text x="64" y="598" fill="#91aabd" font-size="14">Identifiers and raw console captures intentionally excluded • upstream telemetry implemented no AI or response automation</text>
+  </g>
+</svg>
