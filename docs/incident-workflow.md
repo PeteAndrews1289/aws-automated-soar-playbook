@@ -1,72 +1,34 @@
-# Incident Workflow
+# Incident workflow and invariants
 
-This document describes the human-in-the-loop SOAR flow implemented by AegisSOAR.
+## State sequence
 
-## 1. Alert Intake
+```mermaid
+stateDiagram-v2
+    [*] --> ALERT_RECEIVED: valid HMAC + unique event_id
+    ALERT_RECEIVED --> PENDING_APPROVAL: Slack delivery succeeds
+    ALERT_RECEIVED --> NOTIFICATION_FAILED: Slack delivery fails
+    PENDING_APPROVAL --> FALSE_POSITIVE: analyst rejects
+    PENDING_APPROVAL --> CONTAINMENT_IN_PROGRESS: one approval wins condition
+    CONTAINMENT_IN_PROGRESS --> CONTAINED_BY_HUMAN: attachment is visible
+    CONTAINMENT_IN_PROGRESS --> CONTAINMENT_FAILED: API or verification fails
+```
 
-Splunk sends alert telemetry to the API Gateway `/incident` route. The expected payload includes:
+## Safety invariants
 
-- `search_name`
-- `clientip`
-- `host`
-- `iam_role`
+1. An unauthenticated or stale request cannot create or change an incident.
+2. A repeated `event_id` cannot create another Slack notification.
+3. The alert-provided role must be in the deployment allowlist before it is stored.
+4. The receiver retrieves the stored role; it does not use a hardcoded role or a new role value from Slack.
+5. The stored role is checked against the allowlist again immediately before IAM use.
+6. Only one conditional transition can move an incident from `PENDING_APPROVAL` to `CONTAINMENT_IN_PROGRESS` or `FALSE_POSITIVE`.
+7. Exceptions from `AttachRolePolicy` are recorded as `CONTAINMENT_FAILED` and are never discarded.
+8. `CONTAINED_BY_HUMAN` is written only after `ListAttachedRolePolicies` returns the expected policy ARN.
+9. The optional narrative cannot choose an action, target a role, or change state.
 
-## 2. Incident Creation
+## Verification boundary
 
-The SOAR Lambda generates a unique incident ID and stores a record in DynamoDB.
+The success check proves only that IAM listed the generated quarantine policy as attached to the allowlisted role. It does not prove that existing sessions were revoked, that AWS eventual consistency completed everywhere, or that a workload was isolated. Production response would need session revocation, workload-level validation, rollback, alarms for stuck `CONTAINMENT_IN_PROGRESS` records, and an independent reconciliation process.
 
-Initial state:
+## Historical negative test
 
-- `PENDING_APPROVAL`
-
-Stored context:
-
-- Alert name
-- Attacker IP
-- Affected asset
-- AI-generated summary
-- Timestamp
-
-## 3. AI Narrative
-
-The Lambda sends selected alert fields to the OpenAI API to generate a short SOC-style narrative.
-
-Design intent:
-
-- Help the analyst understand the alert faster.
-- Keep the raw alert fields visible.
-- Avoid letting the model make the containment decision.
-
-## 4. Slack Analyst Decision
-
-Slack receives an interactive Block Kit message with two analyst actions:
-
-- Approve quarantine
-- Mark false positive
-
-The workflow pauses until a human chooses an action.
-
-## 5. Containment Action
-
-If quarantine is approved, the Slack receiver Lambda attaches an AWS deny policy to the target IAM role.
-
-Resulting state:
-
-- `CONTAINED_BY_HUMAN`
-
-If the alert is rejected, the incident is marked:
-
-- `FALSE_POSITIVE`
-
-## 6. Evidence to Review
-
-- DynamoDB incident record
-- Slack message and final action state
-- Lambda logs
-- IAM role policy attachment
-- Splunk alert payload
-
-## Security Notes
-
-- The lab demonstrates the workflow pattern, not production-ready SOAR governance.
-- Production use would require narrow IAM permissions, authentication on public endpoints, approval audit logs, rollback, and change-control integration.
+The completed lab retained CloudWatch evidence of an `AccessDenied` response from `AttachRolePolicy`. An early Slack message nevertheless said the action was “approved and executed” because the exception was discarded and the database was unconditionally updated. The revised receiver has a dedicated test for that exact failure mode.

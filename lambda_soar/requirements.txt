@@ -1,0 +1,2 @@
+# No third-party package is bundled. The Lambda Python runtime supplies boto3;
+# the handlers otherwise use the Python standard library.

@@ -1,0 +1,16 @@
+# Generated-only example. The SOAR code in this repository does not apply this
+# manifest or label a workload. Do not treat this file as containment evidence.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: aegis-generated-quarantine-example
+  namespace: aegis-lab
+spec:
+  podSelector:
+    matchLabels:
+      aegis-soar/quarantine: "true"
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  egress: []
